@@ -1,0 +1,71 @@
+# VoxNeuS Official 40k Custom Bottle Training Configuration
+# Provenance: [PAPER] (Sec. 4 & 5) / [REFERENCE IMPLEMENTATION] (NeuS & Voxurf)
+# Optimized for the custom Bottle dataset (/scratch/rushikesh/VoxNeus/Bottle)
+
+model:
+  grid_res: 96                       # [PAPER] (Sec. 5.1: 96^3 -> 160^3 -> 320^3)
+  xyz_min: [-1.0, -1.0, -1.0]        # [REFERENCE IMPLEMENTATION] (Unit bounding sphere)
+  xyz_max: [1.0, 1.0, 1.0]           # [REFERENCE IMPLEMENTATION]
+  gradient_mode: "interpolated"      # [PAPER] (Eq. 7: continuous trilinear interpolated gradient)
+  init_s_val: 0.3                    # [REFERENCE IMPLEMENTATION] (NeuS: s_0 = exp(0.3*10) ~ 20)
+  s_max: 300.0                       # [PAPER SOTA] Bounded s parameter prevents variance explosion
+  hash_n_levels: 16                  # [REFERENCE IMPLEMENTATION] (tiny-cuda-nn hash grid)
+  hash_n_features: 2                 # [REFERENCE IMPLEMENTATION]
+  hash_log2_size: 19                 # [REFERENCE IMPLEMENTATION] (hash table size 2^19)
+  geom_feature_dim: 0                # [PAPER] (Sec. 4.3: disentangled -- zero SDF leakage)
+  mlp_hidden_dim: 64                 # [REFERENCE IMPLEMENTATION] (shallow 2-layer MLP)
+  view_embed_type: "sh"              # [REFERENCE IMPLEMENTATION] (Spherical Harmonics degree 4)
+  entangled: false                   # [PAPER] (Sec. 4.3: strictly disentangled architecture)
+  use_iter_cos_annealing: false      # [PAPER] (Eq. 2: direct inner product <n_i, v>)
+
+training:
+  total_steps: 40000                 # [PAPER] (Sec. 5.1: 40k total iterations)
+  batch_size: 2048                   # [PAPER] (Sec. 5.1: 2048 rays per batch)
+  loss_type: "Huber"                 # [PAPER & NEUS2] (NeuS2 Sec. 3.1: Huber color loss with delta=0.1)
+  huber_delta: 0.1                   # [NEUS2] Huber delta threshold for robust gradient bounds
+  use_mask: true                     # [PAPER SOTA] Foreground mask supervision eliminates background noise
+  mask_weight: 0.1                   # [REFERENCE IMPLEMENTATION] (NeuS mask weight)
+  save_interval: 5000                # [REFERENCE IMPLEMENTATION] Checkpoint interval
+  val_interval: 1000                 # Validation PSNR on test views every 1000 steps
+  sr_milestones: [10000, 30000]      # [PAPER] (Sec. 5.1: 10k, 30k resolution upsample steps)
+  sr_resolutions: [96, 160, 320]     # [PAPER] (Sec. 5.1: 96^3 -> 160^3 -> 320^3)
+  occupancy_update_interval: 16      # [REFERENCE IMPLEMENTATION] (NeuS2: update every 16 steps)
+  progressive_hash: true             # [PAPER] (NeuS2 Sec. 3.3: progressive hash bandwidth)
+
+sampler:
+  n_samples: 64                      # [REFERENCE IMPLEMENTATION] (NeuS: 64 coarse stratified)
+  n_importance: 64                   # [PAPER] (64 importance samples)
+  up_sample_steps: 4                 # [PAPER & REFERENCE] (4-step progressive SDF upsampling: 16/step)
+  perturb: true                      # [REFERENCE IMPLEMENTATION] (stratified jittering)
+
+scheduler:
+  stage1_end: 11000                  # [PAPER] (Sec. 5.1: step 11k)
+  stage2_end: 21000                  # [PAPER] (Sec. 5.1: step 21k)
+  w_eik_init: 0.01                   # [PAPER] (Sec. 5.1: 10^-2 for first 11k steps)
+  w_eik_final: 0.001                 # [PAPER] (Sec. 5.1: linearly decrease to 10^-3)
+  w_curv_init: 1.0e-8                # [PAPER] (Sec. 5.1: 10^-8 for first 11k steps)
+  w_curv_peak: 5.0e-6                # [PAPER] (Sec. 5.1: linearly increase to 5e-6)
+  w_curv_final: 5.0e-7               # [PAPER] (Sec. 5.1: exponentially decrease to 5e-7)
+  s_amplification_k: 5.0             # [PAPER] (Eq. 16: k=5 amplification when grad_s < 0)
+  s_warmup_steps: 2000               # Gate s-amplification for first 2k steps
+  eik_grad_clamp: 0.1                # Clamp Eikonal grad during 500-step post-upsample cooldown
+  w_tv_sdf: 0.0                      # [PAPER] (0.0: paper relies strictly on Curvature loss on V_R)
+
+optimizer:
+  name: "Adam"                       # [PAPER] (Sec. 4.4: Adam with sparse SDF update)
+  lr_sdf: 0.1                        # Stage 1 SDF LR (0-10k steps)
+  lr_sdf_stage2: 0.05                # Stage 2 SDF LR (10k-30k, after 96^3->160^3)
+  lr_sdf_stage3: 0.02                # Stage 3 SDF LR (30k-40k, after 160^3->320^3)
+  lr_hash: 0.01                      # [REFERENCE IMPLEMENTATION] (Instant-NGP hash grid)
+  lr_mlp: 0.001                      # [REFERENCE IMPLEMENTATION] (Adam default for MLP)
+  lr_variance: 5.0e-4                # [PAPER SOTA] Stable NeuS variance learning rate
+  use_sparse_sdf: true               # [PAPER] (Sec. 4.4: update only non-zero gradient voxels)
+
+dataset:
+  name: "dtu"
+  reso_level: 2                      # Half resolution for speed and memory efficiency
+  normalize: true                    # cameras_sphere normalization
+
+logging:
+  dashboard_interval: 100            # Terminal live dashboard interval
+  print_interval: 10                 # Per-step print interval

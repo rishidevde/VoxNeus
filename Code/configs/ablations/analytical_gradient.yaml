@@ -1,0 +1,15 @@
+# Ablation E1: Analytical Gradient Baseline (Table 3 in VoxNeuS Paper)
+# Uses analytical gradient of trilinear interpolation grad^{(a)}(x) (Eq. 4) instead of interpolated gradient
+model:
+  grid_res: 96
+  gradient_mode: "analytical"
+  entangled: false
+
+training:
+  total_steps: 40000
+  batch_size: 2048
+  use_mask: false
+
+scheduler:
+  w_eik_init: 0.01
+  w_curv_init: 1.0e-8

@@ -1,0 +1,19 @@
+# Ablation E2: Full VoxNeuS Baseline (Table 3 in VoxNeuS Paper)
+# Full model with continuous interpolated gradient, Eikonal & curvature regularizers, and disentangled architecture
+model:
+  grid_res: 96
+  gradient_mode: "interpolated"
+  entangled: false
+
+training:
+  total_steps: 40000
+  batch_size: 2048
+  use_mask: false
+
+scheduler:
+  w_eik_init: 0.01
+  w_eik_final: 0.001
+  w_curv_init: 1.0e-8
+  w_curv_peak: 5.0e-6
+  w_curv_final: 5.0e-7
+  s_amplification_k: 5.0

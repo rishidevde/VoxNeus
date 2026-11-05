@@ -1,0 +1,62 @@
+# VoxNeuS + NeuS2 Official 40k DTU Training Configuration
+# Upgrades NeuS with NeuS2 high-speed volumetric rendering, Huber loss,
+# occupancy grid empty-space skipping, and progressive hash frequency masking (lambda schedule).
+
+model:
+  grid_res: 96                       # [PAPER] (Sec. 5.1: 96^3 -> 160^3 -> 320^3)
+  xyz_min: [-1.0, -1.0, -1.0]        # [REFERENCE IMPLEMENTATION] (DTU unit bounding sphere)
+  xyz_max: [1.0, 1.0, 1.0]          # [REFERENCE IMPLEMENTATION]
+  gradient_mode: "interpolated"      # [PAPER] (Eq. 7: continuous trilinear interpolated gradient)
+  init_s_val: 0.3                    # [REFERENCE IMPLEMENTATION] (SingleVarianceNetwork default)
+  hash_n_levels: 16                  # [REFERENCE IMPLEMENTATION] (multiresolution hash grid)
+  hash_n_features: 2                 # [REFERENCE IMPLEMENTATION]
+  hash_log2_size: 19                 # [REFERENCE IMPLEMENTATION] (hash table size 2^19)
+  geom_feature_dim: 15               # [PAPER] (NeuS2 Sec. 3.1: 15D geometry feature vector g)
+  mlp_hidden_dim: 64                 # [REFERENCE IMPLEMENTATION] (Sec. 4.3 shallow 2-layer MLP)
+  view_embed_type: "sh"              # [REFERENCE IMPLEMENTATION] (Spherical Harmonics degree 4)
+  entangled: false                   # [PAPER] (Sec. 4.3: strictly disentangled architecture)
+  occupancy_res: 128                 # [PAPER] (NeuS2 Sec. 3.1: 3D occupancy grid for ray marching acceleration)
+
+training:
+  total_steps: 40000                 # [PAPER] (Sec. 5.1: 40k total iterations)
+  batch_size: 2048                   # [PAPER] (Sec. 5.1: 2048 rays per batch)
+  loss_type: "Huber"                 # [PAPER] (NeuS2 Sec. 3.1 Eq. 4: Huber color loss with delta=0.1)
+  occupancy_update_interval: 16      # [PAPER] (NeuS2: periodic EMA update of occupancy grid)
+  progressive_hash: true             # [PAPER] (NeuS2 Sec. 3.3: progressive frequency bandwidth lambda schedule)
+  use_mask: false                    # [PAPER] (Tab. 1: unmasked surface reconstruction)
+  mask_weight: 0.1                   # [REFERENCE IMPLEMENTATION]
+  save_interval: 5000                # [REFERENCE IMPLEMENTATION]
+  sr_milestones: [10000, 30000]      # [PAPER] (Sec. 5.1: 10k, 30k resolution upsample steps)
+  sr_resolutions: [96, 160, 320]     # [PAPER] (Sec. 5.1: 96^3 -> 160^3 -> 320^3)
+
+sampler:
+  n_samples: 64                      # [REFERENCE IMPLEMENTATION] (stratified samples)
+  n_importance: 64                   # [REFERENCE IMPLEMENTATION] (fine samples)
+  perturb: true                      # [REFERENCE IMPLEMENTATION] (stratified jittering)
+
+scheduler:
+  stage1_end: 11000                  # [PAPER] (Sec. 5.1: step 11k)
+  stage2_end: 21000                  # [PAPER] (Sec. 5.1: step 21k)
+  w_eik_init: 0.01                   # [PAPER] (Sec. 5.1: 10^-2 for first 11k steps)
+  w_eik_final: 0.001                 # [PAPER] (Sec. 5.1: linearly decrease to 10^-3)
+  w_curv_init: 1.0e-8                # [PAPER] (Sec. 5.1: 10^-8 for first 11k steps)
+  w_curv_peak: 5.0e-6                # [PAPER] (Sec. 5.1: linearly increase to 5e-6)
+  w_curv_final: 5.0e-7               # [PAPER] (Sec. 5.1: exponentially decrease to 5e-7)
+  s_amplification_k: 5.0             # [PAPER] (Eq. 16: k=5 amplification when dL/ds < 0)
+
+optimizer:
+  name: "Adam"                       # [PAPER] (Sec. 4.4: Adam with sparse SDF update)
+  lr_sdf: 0.1                        # [REFERENCE IMPLEMENTATION] (dense grid learning rate)
+  lr_hash: 0.01                      # [REFERENCE IMPLEMENTATION] (hash grid learning rate)
+  lr_mlp: 0.001                      # [REFERENCE IMPLEMENTATION] (radiance MLP learning rate)
+  lr_variance: 0.0005                # [REFERENCE IMPLEMENTATION] (variance learning rate)
+  use_sparse_sdf: true               # [PAPER] (Sec. 4.4: update only non-zero gradient voxels)
+
+dataset:
+  name: "dtu"
+  reso_level: 2                      # [REFERENCE IMPLEMENTATION] (half resolution 600x800)
+  normalize: true                    # [REFERENCE IMPLEMENTATION] (cameras_sphere normalization)
+
+logging:
+  dashboard_interval: 100            # [OUR ENGINEERING OPTIMIZATION]
+  print_interval: 10                 # [OUR ENGINEERING OPTIMIZATION]

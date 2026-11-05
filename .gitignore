@@ -1,0 +1,37 @@
+# Python & PyTorch build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.dll
+*.exe
+*.pyd
+*.o
+*.obj
+build/
+develop-eggs/
+dist/
+.eggs/
+*.egg-info/
+*.egg
+
+# Heavy checkpoints (>100MB exceeds GitHub upload limits)
+temp_*
+*.pt
+*.pth
+*.ckpt
+
+# Environments & IDEs
+.env
+.venv
+env/
+venv/
+ENV/
+# Logs & outputs
+logs/
+Code/logs/
+**/logs/
+*.log
+*.ply
+*.obj
+paper_text.txt

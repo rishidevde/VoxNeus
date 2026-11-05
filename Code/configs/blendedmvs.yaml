@@ -1,0 +1,46 @@
+# VoxNeuS BlendedMVS Training Configuration
+model:
+  grid_res: 96
+  xyz_min: [-1.0, -1.0, -1.0]
+  xyz_max: [1.0, 1.0, 1.0]
+  gradient_mode: "interpolated"
+  init_s_val: 0.3
+  hash_n_levels: 16
+  hash_n_features: 2
+  hash_log2_size: 19
+  mlp_hidden_dim: 64
+  view_embed_type: "sh"
+  entangled: false
+
+training:
+  total_steps: 40000
+  batch_size: 2048
+  use_mask: false
+  save_interval: 5000
+  sr_milestones: [10000, 30000]
+  sr_resolutions: [96, 160, 320]
+
+sampler:
+  n_samples: 64
+  n_importance: 64
+  perturb: true
+
+scheduler:
+  stage1_end: 11000
+  stage2_end: 21000
+  w_eik_init: 0.01
+  w_eik_final: 0.001
+  w_curv_init: 1.0e-8
+  w_curv_peak: 5.0e-6
+  w_curv_final: 5.0e-7
+  s_amplification_k: 5.0
+
+optimizer:
+  lr_sdf: 0.1
+  lr_hash: 0.01
+  lr_mlp: 0.001
+  lr_variance: 0.0005
+  use_sparse_sdf: true
+
+dataset:
+  name: "blendedmvs"

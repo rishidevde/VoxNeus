@@ -1,0 +1,6 @@
+# Ablation E5: Entangled Geometry-Radiance Architecture (Sec. 4.3 & Fig. 4 in VoxNeuS paper)
+# Local SDF values leak into the shallow radiance MLP, causing plane deformation artifacts
+model:
+  grid_res: 96
+  gradient_mode: "interpolated"
+  entangled: true                    # Leaks local SDF values into radiance network

@@ -1,0 +1,12 @@
+# Ablation E4: Without Curvature Regularization (w_curv = 0) (Fig. 5 in VoxNeuS paper)
+model:
+  grid_res: 96
+  gradient_mode: "interpolated"
+  entangled: false
+
+scheduler:
+  w_eik_init: 0.01
+  w_eik_final: 0.001
+  w_curv_init: 0.0
+  w_curv_peak: 0.0
+  w_curv_final: 0.0

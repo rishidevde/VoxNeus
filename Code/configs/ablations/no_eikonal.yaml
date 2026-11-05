@@ -1,0 +1,12 @@
+# Ablation E3: Without Eikonal Regularization (w_eik = 0) (Fig. 5 in VoxNeuS paper)
+model:
+  grid_res: 96
+  gradient_mode: "interpolated"
+  entangled: false
+
+scheduler:
+  w_eik_init: 0.0
+  w_eik_final: 0.0
+  w_curv_init: 1.0e-8
+  w_curv_peak: 5.0e-6
+  w_curv_final: 5.0e-7
